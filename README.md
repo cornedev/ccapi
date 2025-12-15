@@ -1,3 +1,4 @@
+![ccapi_ico](gfx/clilauncher.png)
 # ccapi
 An API for downloading minecraft assets.
 
