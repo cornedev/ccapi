@@ -1,0 +1,3 @@
+[submodule "cli/runtime/include/curl-schannel"]
+	path = cli/runtime/include/curl-schannel
+	url = https://github.com/cornedev/curl-schannel.git
