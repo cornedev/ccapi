@@ -1,14 +1,17 @@
 CXX      := g++
-CXXFLAGS := -std=c++17 -Wall -Wextra -O2
+CXXFLAGS := -std=c++17 -Wall -Wextra -O2 -I$(RUNTIME_DIR)/include
 
-OBJ_DIR  := build
-SRC := cli.cpp	ccapi_assets.cpp ccapi_process.cpp
-OBJ      := $(SRC:%.cpp=$(OBJ_DIR)/%.o)
+RUNTIME_DIR := runtime
+OBJ_DIR := build
+SRC := cli.cpp	ccapi_assets.cpp ccapi_process.cpp ccapi_java.cpp
+OBJ := $(SRC:%.cpp=$(OBJ_DIR)/%.o)
 
 ICON_RC = gfx/icon.rc
 ICON_OBJ = $(OBJ_DIR)/icon.o
 
 TARGET := ccapi_cli
+
+CURL_LIB := $(RUNTIME_DIR)/lib/libcurl.dll.a
 
 all: $(TARGET)
 
@@ -17,7 +20,7 @@ $(ICON_OBJ): $(ICON_RC) | build
 	windres $< -O coff -o $@
 
 $(TARGET): $(OBJ) $(ICON_OBJ)
-	$(CXX) $(OBJ) $(ICON_OBJ) -o $@ -lwinhttp -lzip
+	$(CXX) $(OBJ) $(ICON_OBJ) $(CURL_LIB) -lwinhttp -lzip -o $@
 
 $(OBJ_DIR)/%.o: %.cpp
 	@mkdir -p $(OBJ_DIR)
