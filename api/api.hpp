@@ -5,7 +5,7 @@
 #include <optional>
 
 #include <windows.h>
-#include <winhttp.h>
+#include <curl/curl.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
