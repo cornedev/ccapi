@@ -5,6 +5,8 @@
 
 int main()
 {
+    curl_version_info_data* info = curl_version_info(CURLVERSION_NOW);
+    std::cout << "curl SSL backend: " << info->ssl_version << "\n";
     while (true)
     {
         std::cout << "ccapi clilauncher 1.0\n";
@@ -219,7 +221,6 @@ int main()
                 std::cout << "Failed to launch Minecraft.\n";
             else
                 std::cout << "Minecraft launched.\n";
-
             break;
         }
 
@@ -294,8 +295,6 @@ int main()
         default:
             std::cout << "Invalid choice!\n";
         }
-
-        std::cout << "\nPress ENTER to continue...";
         std::cin.ignore();
         std::cin.get();
     }
