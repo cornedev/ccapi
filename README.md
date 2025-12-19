@@ -9,28 +9,28 @@ This API is in WIP state.
 ### Windows
 1. Download the latest version of [MSYS2](https://www.msys2.org/). After installation open the MINGW64 shell.
 2. Install the following dependency:
-```sh
-pacman -S mingw-w64-x86_64-libzip
-```
+    ```sh
+    pacman -S mingw-w64-x86_64-libzip
+    ```
 3. Clone this repository:
-```sh
-git clone https://github.com/cornedev/ccapi.git
-cd ccapi
-```
+   ```sh
+   git clone https://github.com/cornedev/ccapi.git
+   cd ccapi
+   ```
 4. Build the application:
-```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-```
+   ```sh
+   cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+   ```
 and then:
-```sh
-cmake --build build
-```
+   ```sh
+   cmake --build build
+   ```
 That's it. The executable will be in `/build/` and all dependencies will be automatically copied from `/runtime/bin/`
 
 If you ever want to clean or rebuild:
-```sh
-rm -rf build
-```
+   ```sh
+   rm -rf build
+   ```
 And run the build commands again.
 ### Linux
 Not yet supported.
