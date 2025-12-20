@@ -26,6 +26,8 @@ namespace ccapi
         MemoryAndDisk
     };
 
+    std::optional<std::string> GET(const std::wstring& url, GETmode mode = GETmode::MemoryOnly, const std::string& filename = "", const std::string& folder = "");
+    
     std::string DownloadVersionManifest();
     std::optional<std::string> GetVersionJsonDownloadUrl(const std::string& manifestjson, const std::string& versionid);
     std::optional<std::string> DownloadVersionJson(const std::string& jsonurl, const std::string& versionid);

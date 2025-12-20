@@ -17,7 +17,7 @@ static size_t curl_write_callback(void* ptr, size_t size, size_t nmemb, void* us
     return total;
 }
 
-static std::optional<std::string> GET(const std::wstring& url, GETmode mode = GETmode::MemoryOnly, const std::string& filename = "", const std::string& folder = "")
+std::optional<std::string> GET(const std::wstring& url, GETmode mode, const std::string& filename, const std::string& folder)
 {
     std::string curlurl(url.begin(), url.end());
 
