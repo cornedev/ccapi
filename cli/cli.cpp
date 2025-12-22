@@ -11,10 +11,11 @@ int main()
     {
         std::cout << "ccapi clilauncher 1.0\n";
         std::cout << "1. Download all required assets for minecraft.\n";
-        std::cout << "2. Launch minecraft.\n";
-        std::cout << "3. Download server jar.\n";
-        std::cout << "4. Launch server.\n";
-        std::cout << "5. Exit.\n";
+        std::cout << "2. Download java for minecraft.\n";
+        std::cout << "3. Launch minecraft.\n";
+        std::cout << "4. Download server jar.\n";
+        std::cout << "5. Launch server.\n";
+        std::cout << "6. Exit.\n";
         std::cout << "Choose an option: ";
 
         int choice;
@@ -127,6 +128,62 @@ int main()
             std::cout << "Enter Minecraft version (use the same one that you used when downloading assets!): ";
             std::string versionid;
             std::cin >> versionid;
+
+            // download manifest.
+            std::cout << "Downloading version manifest...\n";
+            auto manifest = ccapi::DownloadVersionManifest();
+            if (manifest.empty())
+            {
+                std::cout << "Failed to download manifest.\n";
+                break;
+            }
+            std::cout << "Version manifest downloaded\n";
+
+            // download version json.
+            auto versionjsonurl = ccapi::GetVersionJsonDownloadUrl(manifest, versionid);
+            if (!versionjsonurl)
+            {
+                std::cout << "Version not found in manifest.\n";
+                break;
+            }
+            auto versionurl = *versionjsonurl;
+
+            std::cout << "Downloading version json...\n";
+            auto versionjsonopt = ccapi::DownloadVersionJson(versionurl, versionid);
+            if (!versionjsonopt)
+            {
+                std::cout << "Failed to download version json.\n";
+                break;
+            }
+            std::cout << "Version json downloaded.\n";
+            auto versionjson = *versionjsonopt;
+
+            // download java.
+            auto javaurlopt = ccapi::GetJavaDownloadUrl(versionjson);
+            if (!javaurlopt)
+            {
+                std:: cout << "Failed to get java download url.\n";
+                break;
+            }
+            auto javaurl = *javaurlopt;
+
+            auto javaopt = ccapi::DownloadJava(javaurl, versionid);
+            if (!javaopt)
+            {
+                std:: cout << "Failed to download java.\n";
+                break;
+            }
+            std::cout << "Java downloaded.\n";
+            auto java = *javaopt;
+            std::cout << "Done!\n";
+            break;
+        }
+
+        case 3:
+        {
+            std::cout << "Enter Minecraft version (use the same one that you used when downloading assets and when downloading java!): ";
+            std::string versionid;
+            std::cin >> versionid;
             std::cout << "Enter username: ";
             std::string username;
             std::cin >> username;
@@ -201,7 +258,7 @@ int main()
             }
             auto classpath = *classpathopt;
 
-            // Build launch command
+            // build launch command.
             auto launchcmdopt = ccapi::GetLaunchCommand(username, classpath, versionjson, versionid);
             if (!launchcmdopt)
             {
@@ -214,7 +271,7 @@ int main()
             auto launchcmd = *launchcmdopt;
 
             // launch minecraft.
-            std::string javapath = "java/bin/java.exe";
+            std::string javapath = "runtime/" + versionid + "/java/bin/java.exe";
             bool launched = ccapi::StartProcess(javapath, launchcmd);
 
             if (!launched)
@@ -224,7 +281,7 @@ int main()
             break;
         }
 
-        case 3:
+        case 4:
         {
             std::cout << "Enter Minecraft version: ";
             std::string versionid;
@@ -259,7 +316,7 @@ int main()
             std::cout << "Version json downloaded.\n";
             auto versionjson = *versionjsonopt;
 
-            // download server jar
+            // download server jar.
             auto serverjarurlopt = ccapi::GetServerJarDownloadUrl(versionjson);
             if (!serverjarurlopt)
             {
@@ -280,13 +337,13 @@ int main()
             break;
         }
 
-        case 4:
+        case 5:
         {
             std::cout << "WIP.";
             break;
         }
 
-        case 5:
+        case 6:
         {
             std::cout << "Exiting...";
             return 0;
