@@ -46,5 +46,8 @@ namespace ccapi
     std::optional<std::string> GetServerJarDownloadUrl(const std::string& versionjson);
     std::optional<std::string> DownloadServerJar(const std::string& serverurl, const std::string& versionid);
 
+    std::optional<std::string> GetJavaDownloadUrl(const std::string& versionjson);
+    std::optional<std::string> DownloadJava(const std::string& javaurl, const std::string& versionid);
+
     bool StartProcess(const std::string& javapath, const std::string& args);
 }
