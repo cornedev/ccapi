@@ -2,9 +2,10 @@
 
 namespace ccapi
 {
-    bool StartProcess(const std::string& javapath, const std::string& args)
-    {
-        if (!std::filesystem::exists(javapath))
+
+bool StartProcess(const std::string& javapath, const std::string& args)
+{
+    if (!std::filesystem::exists(javapath))
     {
         std::cout << "Java not found: " << javapath << "\n";
         return false;
@@ -87,5 +88,6 @@ namespace ccapi
         CloseHandle(pi.hThread);
     }).detach();
     return true;
-    }
+}
+
 }
