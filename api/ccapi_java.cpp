@@ -3,7 +3,7 @@
 namespace ccapi
 {
 
-std::optional<std::string> GetJavaDownloadUrl(const std::string& versionjson)
+std::optional<int> GetJavaVersion(const std::string& versionjson)
 {
     try
     {
@@ -11,20 +11,62 @@ std::optional<std::string> GetJavaDownloadUrl(const std::string& versionjson)
         if (!j.contains("javaVersion") || !j["javaVersion"].contains("majorVersion"))
             return std::nullopt;
             
-        int majorVersion = j["javaVersion"]["majorVersion"].get<int>();
-        switch (majorVersion)
+        int major = j["javaVersion"]["majorVersion"].get<int>();
+        switch (major)
         {
-            case 21: return "https://download.java.net/openjdk/jdk21/ri/openjdk-21+35_windows-x64_bin.zip";
-            case 17: return "https://download.java.net/openjdk/jdk17.0.0.1/ri/openjdk-17.0.0.1+2_windows-x64_bin.zip";
-            case 16: return "https://download.java.net/openjdk/jdk16/ri/openjdk-16+36_windows-x64_bin.zip";
-            case 8:  return "https://download.java.net/openjdk/jdk8u44/ri/openjdk-8u44-windows-i586.zip";
-            default: return std::nullopt;
+            case 8:
+            case 16:
+            case 17:
+            case 21:
+                return major;
+            default:
+                return std::nullopt;
         }
     }
     catch (...)
     {
         return std::nullopt;
     }
+}
+
+std::optional<std::string> GetJavaDownloadUrl(int javaversion, OS os, Arch arch)
+{
+    if (arch != Arch::x64 && arch != Arch::arm64)
+    {
+        std::cout << "Unsupported architecture.\n";
+        return std::nullopt;
+    }
+
+    if (arch == Arch::arm64 && os == OS::macos)
+    {
+        std::cout << "arm64 is not supported on macos.\n";
+        return std::nullopt;
+    }
+
+    const char* osStr = nullptr;
+    switch (os)
+    {
+        case OS::windows: osStr = "windows";
+        break;
+        case OS::linux: osStr = "linux";
+        break;
+        case OS::macos: osStr = "mac";
+        break;
+        default: return std::nullopt;
+    }
+
+    switch (javaversion)
+    {
+        case 8:
+        case 16:
+        case 17:
+        case 21:
+            break;
+        default:
+            return std::nullopt;
+    }
+    std::string archStr = (arch == Arch::x64) ? "x64" : "aarch64";
+    return "https://api.adoptium.net/v3/binary/latest/" + std::to_string(javaversion) + "/ga/" + osStr + + "/" + archStr + "/jdk/hotspot/normal/eclipse";
 }
 
 std::optional<std::string> DownloadJava(const std::string& javaurl, const std::string& versionid)
@@ -34,60 +76,91 @@ std::optional<std::string> DownloadJava(const std::string& javaurl, const std::s
 
     const fs::path basedir = fs::path("runtime") / versionid;
     const fs::path javadir = basedir / "java";
-    const fs::path zippath = basedir / "runtime.zip";
+    const fs::path archivepath = basedir / "runtime.archive";
     fs::create_directories(basedir);
 
     if (fs::exists(javadir) && fs::is_directory(javadir))
         return javadir.string();
 
-    if (!fs::exists(zippath) || fs::file_size(zippath) == 0)
+    if (!fs::exists(archivepath) || fs::file_size(archivepath) == 0)
     {
         std::wstring wurl(javaurl.begin(), javaurl.end());
-        auto result = GET(wurl, GETmode::DiskOnly, "runtime.zip", basedir.string());
+        auto result = GET(wurl, GETmode::DiskOnly, "runtime.archive", basedir.string());
         if (!result)
             return std::nullopt;
     }
 
-    int err = 0;
-    zip* archive = zip_open(zippath.string().c_str(), 0, &err);
-    if (!archive)
+    struct archive* a = archive_read_new();
+    archive_read_support_format_all(a);
+    archive_read_support_filter_all(a);
+
+    if (archive_read_open_filename(a, archivepath.string().c_str(), 10240) != ARCHIVE_OK)
+    {
+        archive_read_free(a);
         return std::nullopt;
+    }
 
     fs::path extractedroot;
+    struct archive_entry* entry;
 
-    zip_int64_t entries = zip_get_num_entries(archive, 0);
-    for (zip_int64_t i = 0; i < entries; ++i)
+    while (archive_read_next_header(a, &entry) == ARCHIVE_OK)
     {
-        const char* name = zip_get_name(archive, i, 0);
-        if (!name) continue;
+        const char* pathname = archive_entry_pathname(entry);
+        if (!pathname)
+        {
+            archive_read_data_skip(a);
+            continue;
+        }
+        fs::path entrypath(pathname);
 
-        std::string entryname(name);
+        if (entrypath.is_absolute() || entrypath.string().find("..") != std::string::npos)
+        {
+            archive_read_data_skip(a);
+            continue;
+        }
 
         if (extractedroot.empty())
         {
-            auto pos = entryname.find('/');
-            if (pos != std::string::npos)
-                extractedroot = basedir / entryname.substr(0, pos);
+            auto it = entrypath.begin();
+            if (it != entrypath.end())
+                extractedroot = basedir / (*it);
         }
+        fs::path outpath = basedir / entrypath;
 
-        zip_file* file = zip_fopen_index(archive, i, 0);
-        if (!file) continue;
+        if (archive_entry_filetype(entry) == AE_IFDIR)
+        {
+            fs::create_directories(outpath);
+        }
+        else
+        {
+            fs::create_directories(outpath.parent_path());
 
-        zip_stat_t st{};
-        zip_stat_index(archive, i, 0, &st);
+            std::ofstream out(outpath, std::ios::binary);
+            if (!out)
+            {
+                archive_read_free(a);
+                return std::nullopt;
+            }
 
-        std::vector<char> buffer(st.size);
-        zip_fread(file, buffer.data(), buffer.size());
-        zip_fclose(file);
+            const void* buff;
+            size_t size;
+            la_int64_t offset;
 
-        fs::path outpath = basedir / entryname;
-        fs::create_directories(outpath.parent_path());
-
-        std::ofstream out(outpath, std::ios::binary);
-        out.write(buffer.data(), buffer.size());
-        out.close();
+            while (true)
+            {
+                int r = archive_read_data_block(a, &buff, &size, &offset);
+                if (r == ARCHIVE_EOF)
+                    break;
+                if (r != ARCHIVE_OK)
+                {
+                    archive_read_free(a);
+                    return std::nullopt;
+                }
+                out.write(static_cast<const char*>(buff), size);
+            }
+        }
     }
-    zip_close(archive);
+    archive_read_free(a);
 
     if (!extractedroot.empty() && fs::exists(extractedroot))
     {
@@ -97,7 +170,7 @@ std::optional<std::string> DownloadJava(const std::string& javaurl, const std::s
     {
         return std::nullopt;
     }
-    fs::remove(zippath);
+    fs::remove(archivepath);
     return javadir.string();
 }
 
