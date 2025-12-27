@@ -10,10 +10,10 @@ This API is in WIP state.
     - Client jar downloading.
     - Assets downloading.
     - Server jar downloading.
-    - Libraries downloading.
+    - Libraries downloading. *
     - Natives extracting (currently only works for newer versions) *
     - Starting a offline Minecraft process. *
-    - Jdk downloading. *
+    - Jdk downloading.
 ## Planned
 - Fabric support.
 - Natives downloading for older versions.
